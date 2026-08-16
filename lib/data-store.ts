@@ -391,26 +391,27 @@ class DataStore {
         if (options?.eventType && options.eventType !== 'All') query = query.eq('event_type', options.eventType);
         
         const { data, error } = await query;
-        if (!error && data !== null) {
+        if (!error && Array.isArray(data)) {
           bookings = data as Booking[];
           fetchedFromSupabase = true;
         } else if (error) {
           console.error('Supabase getBookings error:', error);
         }
       } catch (err) {
-        console.error('Supabase bookings query error:', err);
+        console.error('Supabase bookings query exception:', err);
       }
     }
 
-    // Only fallback to localStorage if Supabase is NOT configured or had a fatal network error
+    // If Supabase didn't respond or is local, use local storage
     if (!fetchedFromSupabase) {
       this.initLocalStorage();
-      if (!this.isBrowser()) return INITIAL_BOOKINGS;
-      try {
-        const raw = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
-        bookings = raw ? JSON.parse(raw) : INITIAL_BOOKINGS;
-      } catch {
-        bookings = INITIAL_BOOKINGS;
+      if (this.isBrowser()) {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
+          bookings = raw ? JSON.parse(raw) : [];
+        } catch {
+          bookings = [];
+        }
       }
     }
 
@@ -488,6 +489,7 @@ class DataStore {
       ...data,
       id: newId,
       booking_number: bookingNumber,
+      decoration_name: data.decoration_name || 'Event Decoration',
       status: data.status || 'New Enquiry',
       created_at: now,
       updated_at: now
@@ -495,9 +497,51 @@ class DataStore {
 
     if (this.isUsingSupabase() && supabase) {
       try {
-        const { error } = await supabase.from('bookings').insert(newBooking);
+        const payload: any = {
+          id: newBooking.id,
+          booking_number: newBooking.booking_number,
+          decoration_id: newBooking.decoration_id || null,
+          decoration_name: newBooking.decoration_name || 'Event Decoration',
+          request_type: newBooking.request_type || 'STANDARD',
+          customer_name: newBooking.customer_name,
+          phone: newBooking.phone,
+          whatsapp: newBooking.whatsapp || newBooking.phone,
+          email: newBooking.email || null,
+          event_type: newBooking.event_type || 'Special Event',
+          event_date: newBooking.event_date,
+          event_time: newBooking.event_time || null,
+          guest_count: Number(newBooking.guest_count) || null,
+          venue_name: newBooking.venue_name || 'Kharagpur Venue',
+          venue_address: newBooking.venue_address || null,
+          city: newBooking.city || 'Kharagpur',
+          pincode: newBooking.pincode || '721301',
+          indoor_outdoor: newBooking.indoor_outdoor || 'Indoor',
+          venue_contact: newBooking.venue_contact || null,
+          special_requirements: newBooking.special_requirements || null,
+          reference_image_urls: newBooking.reference_image_urls || [],
+          estimated_min_price: Number(newBooking.estimated_min_price) || 0,
+          estimated_max_price: Number(newBooking.estimated_max_price) || 0,
+          final_quoted_price: newBooking.final_quoted_price ? Number(newBooking.final_quoted_price) : null,
+          status: newBooking.status || 'New Enquiry',
+          admin_notes: newBooking.admin_notes || null,
+          created_at: newBooking.created_at,
+          updated_at: newBooking.updated_at
+        };
+
+        let { error } = await supabase.from('bookings').insert(payload);
+        
+        // If error is about missing column in an older schema, retry safely
+        if (error && error.message && error.message.includes('decoration_name')) {
+          delete payload.decoration_name;
+          const retry = await supabase.from('bookings').insert(payload);
+          error = retry.error;
+        }
+
         if (error) {
-          console.error('Supabase insert error details:', error);
+          console.error('Supabase booking insert error:', error);
+          if (typeof window !== 'undefined' && error.message) {
+            console.warn('Database note:', error.message);
+          }
         }
       } catch (e) {
         console.error('Supabase booking insert exception:', e);

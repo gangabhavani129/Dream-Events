@@ -49,8 +49,9 @@ CREATE TABLE IF NOT EXISTS public.decoration_images (
 CREATE TABLE IF NOT EXISTS public.bookings (
     id TEXT PRIMARY KEY DEFAULT ('book-' || uuid_generate_v4()),
     booking_number TEXT UNIQUE NOT NULL,
-    decoration_id TEXT REFERENCES public.decorations(id) ON DELETE SET NULL,
-    request_type TEXT DEFAULT 'STANDARD' CHECK (request_type IN ('STANDARD', 'CUSTOM')),
+    decoration_id TEXT,
+    decoration_name TEXT,
+    request_type TEXT DEFAULT 'STANDARD',
     customer_name TEXT NOT NULL,
     phone TEXT NOT NULL,
     whatsapp TEXT NOT NULL,
@@ -61,8 +62,8 @@ CREATE TABLE IF NOT EXISTS public.bookings (
     guest_count INTEGER,
     venue_name TEXT NOT NULL,
     venue_address TEXT,
-    city TEXT DEFAULT 'Hyderabad',
-    pincode TEXT,
+    city TEXT DEFAULT 'Kharagpur',
+    pincode TEXT DEFAULT '721301',
     indoor_outdoor TEXT DEFAULT 'Indoor',
     venue_contact TEXT,
     special_requirements TEXT,
@@ -70,17 +71,7 @@ CREATE TABLE IF NOT EXISTS public.bookings (
     estimated_min_price NUMERIC(10, 2) DEFAULT 0,
     estimated_max_price NUMERIC(10, 2) DEFAULT 0,
     final_quoted_price NUMERIC(10, 2),
-    status TEXT DEFAULT 'New Enquiry' CHECK (status IN (
-        'New Enquiry',
-        'Contacted',
-        'Quotation Sent',
-        'Awaiting Confirmation',
-        'Confirmed',
-        'Advance Paid',
-        'Fully Paid',
-        'Completed',
-        'Cancelled'
-    )),
+    status TEXT DEFAULT 'New Enquiry',
     admin_notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -164,15 +155,19 @@ CREATE POLICY "Public can view business settings" ON public.business_settings
 CREATE POLICY "Admins full access on business settings" ON public.business_settings
     FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE);
 
--- Bookings Policies (Customers can INSERT their enquiry, Admins have full access)
-CREATE POLICY "Anyone can submit a booking enquiry" ON public.bookings
-    FOR INSERT TO anon, authenticated WITH CHECK (TRUE);
+-- Bookings Policies (Full public insert & select, Admin full access)
+DROP POLICY IF EXISTS "Anyone can submit a booking enquiry" ON public.bookings;
+DROP POLICY IF EXISTS "Public can view own submitted booking by ID/Number" ON public.bookings;
+DROP POLICY IF EXISTS "Admins full access on bookings" ON public.bookings;
+DROP POLICY IF EXISTS "Allow all bookings select" ON public.bookings;
+DROP POLICY IF EXISTS "Allow all bookings insert" ON public.bookings;
+DROP POLICY IF EXISTS "Allow all bookings update" ON public.bookings;
+DROP POLICY IF EXISTS "Allow all bookings delete" ON public.bookings;
 
-CREATE POLICY "Public can view own submitted booking by ID/Number" ON public.bookings
-    FOR SELECT USING (TRUE); -- Restricted in frontend or via auth.role() = 'authenticated' for all rows
-
-CREATE POLICY "Admins full access on bookings" ON public.bookings
-    FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "Allow all bookings select" ON public.bookings FOR SELECT USING (TRUE);
+CREATE POLICY "Allow all bookings insert" ON public.bookings FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "Allow all bookings update" ON public.bookings FOR UPDATE USING (TRUE);
+CREATE POLICY "Allow all bookings delete" ON public.bookings FOR DELETE USING (TRUE);
 
 -- ==============================================================================
 -- 8. STORAGE BUCKET CONFIGURATION (Supabase Storage)

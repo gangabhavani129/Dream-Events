@@ -89,28 +89,32 @@ export default function AdminBookingsPage() {
   };
 
   const handleCreateTestBooking = async () => {
-    const test = await dataStore.createBooking({
-      decoration_name: 'Royal Rose Floral Wedding Stage',
-      request_type: 'STANDARD',
-      customer_name: 'Nishant Test Client',
-      phone: '+91 90641 77811',
-      whatsapp: '+91 90641 77811',
-      email: 'chnishantpoco123@gmail.com',
-      event_type: 'Wedding',
-      event_date: new Date(Date.now() + 86400000 * 14).toISOString().split('T')[0],
-      event_time: '18:30',
-      guest_count: 350,
-      venue_name: 'Grand Celebration Hall',
-      venue_address: 'Aam Bagan, Malancha',
-      city: 'Kharagpur',
-      pincode: '721301',
-      indoor_outdoor: 'Indoor',
-      special_requirements: 'Test booking to verify live cloud synchronization across phone & laptop.',
-      estimated_min_price: 25000,
-      estimated_max_price: 40000,
-      status: 'New Enquiry',
-    });
-    alert(`Test booking ${test.booking_number} created! Check your phone and laptop.`);
+    try {
+      const test = await dataStore.createBooking({
+        decoration_name: 'Royal Rose Floral Wedding Stage',
+        request_type: 'STANDARD',
+        customer_name: 'Nishant Test Client',
+        phone: '+91 90641 77811',
+        whatsapp: '+91 90641 77811',
+        email: 'chnishantpoco123@gmail.com',
+        event_type: 'Wedding',
+        event_date: new Date(Date.now() + 86400000 * 14).toISOString().split('T')[0],
+        event_time: '18:30',
+        guest_count: 350,
+        venue_name: 'Grand Celebration Hall',
+        venue_address: 'Aam Bagan, Malancha',
+        city: 'Kharagpur',
+        pincode: '721301',
+        indoor_outdoor: 'Indoor',
+        special_requirements: 'Test booking to verify live cloud synchronization across phone & laptop.',
+        estimated_min_price: 25000,
+        estimated_max_price: 40000,
+        status: 'New Enquiry',
+      });
+      await loadData();
+    } catch (e: any) {
+      console.error('Test booking error:', e);
+    }
   };
 
   const handleDeleteSingle = async (id: string, name: string) => {
