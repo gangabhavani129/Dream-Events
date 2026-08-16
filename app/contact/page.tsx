@@ -65,10 +65,10 @@ export default function ContactPage() {
     setFormSent(true);
   };
 
-  const phoneNum = settings?.phone || '+91 98765 43210';
-  const waNum = settings?.whatsapp || '+91 98765 43210';
-  const emailAddr = settings?.email || 'contact@utsavdecor.com';
-  const addressStr = settings?.address || 'Plot No. 42, Jubilee Hills, Hyderabad';
+  const phoneNum = settings?.phone || '+91 90641 77811';
+  const waNum = settings?.whatsapp || '+91 90641 77811';
+  const emailAddr = settings?.email || 'chnishantpoco123@gmail.com';
+  const addressStr = settings?.address || 'Door No. 664/5, Khudiram Palli, Aam Bagan, Malancha, Kharagpur';
   const workingHours = settings?.working_hours || 'Mon – Sun: 8:00 AM – 9:30 PM';
 
   return (

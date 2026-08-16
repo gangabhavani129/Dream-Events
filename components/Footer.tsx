@@ -35,12 +35,12 @@ export default function Footer() {
     return () => unsub();
   }, []);
 
-  const phoneNum = settings?.phone || '+91 98765 43210';
-  const waNum = settings?.whatsapp || '+91 98765 43210';
-  const emailAddr = settings?.email || 'contact@utsavdecor.com';
-  const addressStr = settings?.address || 'Jubilee Hills, Hyderabad';
+  const phoneNum = settings?.phone || '+91 90641 77811';
+  const waNum = settings?.whatsapp || '+91 90641 77811';
+  const emailAddr = settings?.email || 'chnishantpoco123@gmail.com';
+  const addressStr = settings?.address || 'Door No. 664/5, Khudiram Palli, Aam Bagan, Malancha, Kharagpur';
   const workingHours = settings?.working_hours || 'Mon – Sun: 8:00 AM – 9:30 PM';
-  const brandName = settings?.business_name || 'Utsav Flower Decorations';
+  const brandName = settings?.business_name || 'Dream Events';
 
   return (
     <footer className="bg-[#1C1917] text-stone-300 border-t border-amber-900/30 pt-14 pb-20 md:pb-12 mt-16">

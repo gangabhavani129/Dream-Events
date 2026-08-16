@@ -18,13 +18,13 @@ import {
 import { generateBookingNumber, compressImageToBase64 } from './utils';
 
 const STORAGE_KEYS = {
-  CATEGORIES: 'dreamevents_categories_v3',
-  DECORATIONS: 'dreamevents_decorations_v3',
-  GALLERY: 'dreamevents_gallery_v3',
-  SETTINGS: 'dreamevents_settings_v3',
-  BOOKINGS: 'dreamevents_bookings_v3',
-  BOOKING_SEQ: 'dreamevents_booking_sequence_v3',
-  SUPABASE_CONFIG_OVERRIDE: 'dreamevents_supabase_override_v3'
+  CATEGORIES: 'dreamevents_categories_v4',
+  DECORATIONS: 'dreamevents_decorations_v4',
+  GALLERY: 'dreamevents_gallery_v4',
+  SETTINGS: 'dreamevents_settings_v4',
+  BOOKINGS: 'dreamevents_bookings_v4',
+  BOOKING_SEQ: 'dreamevents_booking_sequence_v4',
+  SUPABASE_CONFIG_OVERRIDE: 'dreamevents_supabase_override_v4'
 };
 
 // Event emitter helper for reactive updates
@@ -382,20 +382,28 @@ class DataStore {
     sortBy?: 'newest' | 'oldest' | 'event_date_asc' | 'event_date_desc';
   }): Promise<Booking[]> {
     let bookings: Booking[] = [];
+    let fetchedFromSupabase = false;
 
     if (this.isUsingSupabase() && supabase) {
       try {
         let query = supabase.from('bookings').select('*').order('created_at', { ascending: false });
         if (options?.status && options.status !== 'All') query = query.eq('status', options.status);
         if (options?.eventType && options.eventType !== 'All') query = query.eq('event_type', options.eventType);
+        
         const { data, error } = await query;
-        if (!error && data && data.length > 0) bookings = data as Booking[];
+        if (!error && data !== null) {
+          bookings = data as Booking[];
+          fetchedFromSupabase = true;
+        } else if (error) {
+          console.error('Supabase getBookings error:', error);
+        }
       } catch (err) {
-        console.warn('Supabase bookings query error:', err);
+        console.error('Supabase bookings query error:', err);
       }
     }
 
-    if (bookings.length === 0) {
+    // Only fallback to localStorage if Supabase is NOT configured or had a fatal network error
+    if (!fetchedFromSupabase) {
       this.initLocalStorage();
       if (!this.isBrowser()) return INITIAL_BOOKINGS;
       try {
@@ -447,13 +455,26 @@ class DataStore {
   }
 
   async getBookingById(id: string): Promise<Booking | null> {
+    if (this.isUsingSupabase() && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('*')
+          .or(`id.eq.${id},booking_number.eq.${id}`)
+          .maybeSingle();
+        if (!error && data) return data as Booking;
+      } catch (e) {
+        console.error('Supabase getBookingById error:', e);
+      }
+    }
+
     const list = await this.getBookings();
     return list.find((b) => b.id === id || b.booking_number === id) || null;
   }
 
   async createBooking(data: Omit<Booking, 'id' | 'booking_number' | 'created_at' | 'updated_at' | 'status'> & { status?: BookingStatus }): Promise<Booking> {
     const now = new Date().toISOString();
-    let nextSeq = 6;
+    let nextSeq = Math.floor(1000 + Math.random() * 9000);
     if (this.isBrowser()) {
       const currentSeq = parseInt(localStorage.getItem(STORAGE_KEYS.BOOKING_SEQ) || '5', 10);
       nextSeq = currentSeq + 1;
@@ -474,16 +495,24 @@ class DataStore {
 
     if (this.isUsingSupabase() && supabase) {
       try {
-        await supabase.from('bookings').insert(newBooking);
+        const { error } = await supabase.from('bookings').insert(newBooking);
+        if (error) {
+          console.error('Supabase insert error details:', error);
+        }
       } catch (e) {
-        console.warn('Supabase booking insert error:', e);
+        console.error('Supabase booking insert exception:', e);
       }
     }
 
     if (this.isBrowser()) {
-      const list = await this.getBookings();
-      list.unshift(newBooking);
-      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(list));
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
+        const list: Booking[] = raw ? JSON.parse(raw) : [];
+        list.unshift(newBooking);
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(list));
+      } catch (e) {
+        console.error('LocalStorage write error:', e);
+      }
     }
 
     notifyChange();
@@ -576,6 +605,22 @@ class DataStore {
 
     if (this.isBrowser()) {
       localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(list));
+    }
+    notifyChange();
+    return true;
+  }
+
+  async clearDemoBookings(): Promise<boolean> {
+    if (this.isUsingSupabase() && supabase) {
+      try {
+        await supabase.from('bookings').delete().neq('id', '');
+      } catch (e) {
+        console.warn('Supabase clear bookings error:', e);
+      }
+    }
+
+    if (this.isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify([]));
     }
     notifyChange();
     return true;

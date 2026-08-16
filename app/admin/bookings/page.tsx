@@ -71,8 +71,28 @@ export default function AdminBookingsPage() {
   };
 
   const handleExportCSV = () => {
-    const filename = `utsav-bookings-${selectedStatus.toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = `dreamevents-bookings-${selectedStatus.toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
     exportBookingsToCSV(bookings, filename);
+  };
+
+  const handleClearDemoBookings = async () => {
+    if (window.confirm('Delete all sample/demo bookings? Real customer bookings you receive later will start with a fresh list.')) {
+      if (typeof (dataStore as any).clearDemoBookings === 'function') {
+        await (dataStore as any).clearDemoBookings();
+      } else {
+        // Fallback clear
+        const all = await dataStore.getBookings();
+        for (const b of all) {
+          await dataStore.deleteBooking(b.id);
+        }
+      }
+    }
+  };
+
+  const handleDeleteSingle = async (id: string, name: string) => {
+    if (window.confirm(`Delete booking enquiry for ${name}?`)) {
+      await dataStore.deleteBooking(id);
+    }
   };
 
   const statusColors: Record<string, string> = {
@@ -114,14 +134,28 @@ export default function AdminBookingsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all self-start sm:self-auto"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Export Filtered ({bookings.length}) as CSV</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Export CSV</span>
+            </button>
+
+            {bookings.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearDemoBookings}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-sm"
+                title="Delete all demo/sample enquiries"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span>Clear Demo Bookings</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search & Filter Controls */}
@@ -300,13 +334,23 @@ export default function AdminBookingsPage() {
                     </td>
 
                     <td className="py-3.5 px-4 text-right">
-                      <Link
-                        href={`/admin/bookings/${b.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] border border-amber-200"
-                      >
-                        <span>Manage</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link
+                          href={`/admin/bookings/${b.id}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] border border-amber-200"
+                        >
+                          <span>Manage</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSingle(b.id, b.customer_name)}
+                          className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                          title="Delete this booking"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
