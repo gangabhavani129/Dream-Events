@@ -508,9 +508,9 @@ class DataStore {
           whatsapp: newBooking.whatsapp || newBooking.phone,
           email: newBooking.email || null,
           event_type: newBooking.event_type || 'Special Event',
-          event_date: newBooking.event_date,
-          event_time: newBooking.event_time || null,
-          guest_count: Number(newBooking.guest_count) || null,
+          event_date: newBooking.event_date || new Date().toISOString().split('T')[0],
+          event_time: newBooking.event_time || '18:00',
+          guest_count: Number(newBooking.guest_count) || 100,
           venue_name: newBooking.venue_name || 'Kharagpur Venue',
           venue_address: newBooking.venue_address || null,
           city: newBooking.city || 'Kharagpur',
@@ -518,7 +518,7 @@ class DataStore {
           indoor_outdoor: newBooking.indoor_outdoor || 'Indoor',
           venue_contact: newBooking.venue_contact || null,
           special_requirements: newBooking.special_requirements || null,
-          reference_image_urls: newBooking.reference_image_urls || [],
+          reference_image_urls: Array.isArray(newBooking.reference_image_urls) ? newBooking.reference_image_urls : [],
           estimated_min_price: Number(newBooking.estimated_min_price) || 0,
           estimated_max_price: Number(newBooking.estimated_max_price) || 0,
           final_quoted_price: newBooking.final_quoted_price ? Number(newBooking.final_quoted_price) : null,
@@ -530,6 +530,13 @@ class DataStore {
 
         let { error } = await supabase.from('bookings').insert(payload);
         
+        // If error is about foreign key constraint on decoration_id, retry with decoration_id = null
+        if (error && (error.message?.includes('foreign key') || error.message?.includes('violates') || error.code === '23503')) {
+          payload.decoration_id = null;
+          const retry = await supabase.from('bookings').insert(payload);
+          error = retry.error;
+        }
+
         // If error is about missing column in an older schema, retry safely
         if (error && error.message && error.message.includes('decoration_name')) {
           delete payload.decoration_name;
@@ -539,9 +546,8 @@ class DataStore {
 
         if (error) {
           console.error('Supabase booking insert error:', error);
-          if (typeof window !== 'undefined' && error.message) {
-            console.warn('Database note:', error.message);
-          }
+        } else {
+          console.log('✅ Booking saved to Supabase successfully:', newBooking.booking_number);
         }
       } catch (e) {
         console.error('Supabase booking insert exception:', e);
