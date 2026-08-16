@@ -61,8 +61,8 @@ export default function BookingModalOrStepper({
     // Step 3: Venue
     venue_name: '',
     venue_address: '',
-    city: 'Hyderabad',
-    pincode: '500034',
+    city: 'Kharagpur',
+    pincode: '721301',
     indoor_outdoor: 'Indoor' as 'Indoor' | 'Outdoor' | 'Both' | 'Not Decided',
     venue_contact: '',
     venue_not_finalized: false,
@@ -236,8 +236,8 @@ export default function BookingModalOrStepper({
           ? 'Venue not finalized yet'
           : formData.venue_name.trim(),
         venue_address: formData.venue_address.trim(),
-        city: formData.city.trim() || 'Hyderabad',
-        pincode: formData.pincode.trim() || '500001',
+        city: formData.city.trim() || 'Kharagpur',
+        pincode: formData.pincode.trim() || '721301',
         indoor_outdoor: formData.indoor_outdoor,
         venue_contact: formData.venue_contact.trim(),
         special_requirements: formData.special_requirements.trim(),
