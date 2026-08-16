@@ -76,17 +76,41 @@ export default function AdminBookingsPage() {
   };
 
   const handleClearDemoBookings = async () => {
-    if (window.confirm('Delete all sample/demo bookings? Real customer bookings you receive later will start with a fresh list.')) {
+    if (window.confirm('Delete all bookings? Real customer bookings you receive later will start with a fresh list.')) {
       if (typeof (dataStore as any).clearDemoBookings === 'function') {
         await (dataStore as any).clearDemoBookings();
       } else {
-        // Fallback clear
         const all = await dataStore.getBookings();
         for (const b of all) {
           await dataStore.deleteBooking(b.id);
         }
       }
     }
+  };
+
+  const handleCreateTestBooking = async () => {
+    const test = await dataStore.createBooking({
+      decoration_name: 'Royal Rose Floral Wedding Stage',
+      request_type: 'STANDARD',
+      customer_name: 'Nishant Test Client',
+      phone: '+91 90641 77811',
+      whatsapp: '+91 90641 77811',
+      email: 'chnishantpoco123@gmail.com',
+      event_type: 'Wedding',
+      event_date: new Date(Date.now() + 86400000 * 14).toISOString().split('T')[0],
+      event_time: '18:30',
+      guest_count: 350,
+      venue_name: 'Grand Celebration Hall',
+      venue_address: 'Aam Bagan, Malancha',
+      city: 'Kharagpur',
+      pincode: '721301',
+      indoor_outdoor: 'Indoor',
+      special_requirements: 'Test booking to verify live cloud synchronization across phone & laptop.',
+      estimated_min_price: 25000,
+      estimated_max_price: 40000,
+      status: 'New Enquiry',
+    });
+    alert(`Test booking ${test.booking_number} created! Check your phone and laptop.`);
   };
 
   const handleDeleteSingle = async (id: string, name: string) => {
@@ -137,6 +161,15 @@ export default function AdminBookingsPage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={handleCreateTestBooking}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>+ Create Test Booking</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleExportCSV}
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
             >
@@ -152,7 +185,7 @@ export default function AdminBookingsPage() {
                 title="Delete all demo/sample enquiries"
               >
                 <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                <span>Clear Demo Bookings</span>
+                <span>Clear All Bookings</span>
               </button>
             )}
           </div>
@@ -240,123 +273,147 @@ export default function AdminBookingsPage() {
 
         {/* Bookings Table */}
         <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-stone-50 text-stone-500 uppercase font-bold border-b border-stone-200">
-                <tr>
-                  <th className="py-3.5 px-4">Booking ID</th>
-                  <th className="py-3.5 px-4">Customer</th>
-                  <th className="py-3.5 px-4">Phone / WhatsApp</th>
-                  <th className="py-3.5 px-4">Decoration Concept</th>
-                  <th className="py-3.5 px-4">Event Date & Time</th>
-                  <th className="py-3.5 px-4">Venue</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Created Date</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {bookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-stone-50/80 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-amber-700">
-                      <Link href={`/admin/bookings/${b.id}`} className="hover:underline flex items-center gap-1">
-                        <span>{b.booking_number}</span>
-                      </Link>
-                    </td>
-
-                    <td className="py-3.5 px-4 font-semibold text-stone-900">
-                      <div>{b.customer_name}</div>
-                      {b.guest_count && (
-                        <div className="text-[10px] text-stone-400 font-normal">
-                          {b.guest_count} guests
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-stone-700">{b.phone}</span>
-                        <a
-                          href={createWhatsAppLink(b.whatsapp || b.phone, `Hi ${b.customer_name}! This is Pushpam Event Decors regarding your booking ${b.booking_number}...`)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-emerald-600 hover:text-emerald-700"
-                          title="Open WhatsApp"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-stone-800 font-medium">
-                      <div className="line-clamp-1">{b.decoration_name || 'Custom Concept'}</div>
-                      {b.request_type === 'CUSTOM' && (
-                        <span className="inline-block px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold">
-                          CUSTOM REQUEST
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-stone-700">
-                      <div className="font-semibold">{formatDate(b.event_date)}</div>
-                      <div className="text-[10px] text-stone-400 font-medium">
-                        {b.event_type} ({b.event_time || 'Day'})
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-stone-600 max-w-[140px] truncate">
-                      <div>{b.venue_name}</div>
-                      <div className="text-[10px] text-stone-400">{b.city}</div>
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      <select
-                        value={b.status}
-                        onChange={(e: any) => handleStatusChange(b.id, e.target.value)}
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border outline-none cursor-pointer ${
-                          statusColors[b.status] || 'bg-stone-100 text-stone-800'
-                        }`}
-                      >
-                        <option value="New Enquiry">New Enquiry</option>
-                        <option value="Contacted">Contacted</option>
-                        <option value="Quotation Sent">Quotation Sent</option>
-                        <option value="Awaiting Confirmation">Awaiting Confirmation</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Advance Paid">Advance Paid</option>
-                        <option value="Fully Paid">Fully Paid</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Cancelled">Cancelled</option>
-                      </select>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-stone-400 text-[11px]">
-                      {formatDate(b.created_at)}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link
-                          href={`/admin/bookings/${b.id}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] border border-amber-200"
-                        >
-                          <span>Manage</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSingle(b.id, b.customer_name)}
-                          className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50"
-                          title="Delete this booking"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
+          {bookings.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-stone-50 text-stone-500 uppercase font-bold border-b border-stone-200">
+                  <tr>
+                    <th className="py-3.5 px-4">Booking ID</th>
+                    <th className="py-3.5 px-4">Customer</th>
+                    <th className="py-3.5 px-4">Phone / WhatsApp</th>
+                    <th className="py-3.5 px-4">Decoration Concept</th>
+                    <th className="py-3.5 px-4">Event Date & Time</th>
+                    <th className="py-3.5 px-4">Venue</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Created Date</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {bookings.map((b) => (
+                    <tr key={b.id} className="hover:bg-stone-50/80 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-amber-700">
+                        <Link href={`/admin/bookings/${b.id}`} className="hover:underline flex items-center gap-1">
+                          <span>{b.booking_number}</span>
+                        </Link>
+                      </td>
+
+                      <td className="py-3.5 px-4 font-semibold text-stone-900">
+                        <div>{b.customer_name}</div>
+                        {b.guest_count && (
+                          <div className="text-[10px] text-stone-400 font-normal">
+                            {b.guest_count} guests
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-stone-700">{b.phone}</span>
+                          <a
+                            href={createWhatsAppLink(b.whatsapp || b.phone, `Hi ${b.customer_name}! This is Dream Events regarding your booking ${b.booking_number}...`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-600 hover:text-emerald-700"
+                            title="Open WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-stone-800 font-medium">
+                        <div className="line-clamp-1">{b.decoration_name || 'Custom Concept'}</div>
+                        {b.request_type === 'CUSTOM' && (
+                          <span className="inline-block px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold">
+                            CUSTOM REQUEST
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-stone-700">
+                        <div className="font-semibold">{formatDate(b.event_date)}</div>
+                        <div className="text-[10px] text-stone-400 font-medium">
+                          {b.event_type} ({b.event_time || 'Day'})
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-stone-600 max-w-[140px] truncate">
+                        <div>{b.venue_name}</div>
+                        <div className="text-[10px] text-stone-400">{b.city}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <select
+                          value={b.status}
+                          onChange={(e: any) => handleStatusChange(b.id, e.target.value)}
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full border outline-none cursor-pointer ${
+                            statusColors[b.status] || 'bg-stone-100 text-stone-800'
+                          }`}
+                        >
+                          <option value="New Enquiry">New Enquiry</option>
+                          <option value="Contacted">Contacted</option>
+                          <option value="Quotation Sent">Quotation Sent</option>
+                          <option value="Awaiting Confirmation">Awaiting Confirmation</option>
+                          <option value="Confirmed">Confirmed</option>
+                          <option value="Advance Paid">Advance Paid</option>
+                          <option value="Fully Paid">Fully Paid</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-stone-400 text-[11px]">
+                        {formatDate(b.created_at)}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link
+                            href={`/admin/bookings/${b.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] border border-amber-200"
+                          >
+                            <span>Manage</span>
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSingle(b.id, b.customer_name)}
+                            className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                            title="Delete this booking"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-10 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="font-heading text-lg font-bold text-stone-900">
+                No Bookings Yet — List is Fresh & Ready!
+              </h3>
+              <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
+                Your booking list is clean. When a customer scans your QR code or submits an enquiry on your website, it will immediately appear here.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleCreateTestBooking}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition-all"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Create a Test Booking to Verify Sync</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>
